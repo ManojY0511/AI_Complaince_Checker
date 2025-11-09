@@ -1,22 +1,6 @@
 # Script : User Upload Doc and Interface 
 # Author : Manoj 
 
-'''
-import streamlit as st
-
-from client_run import send_prompt  # Assuming client.py has a function to send input
-
-st.title("Welcome User -AI Compalince Guide Checker Interface")
-
-user_input = st.text_input("Enter your prompt:")
-user_file  =st.attach
-if st.button("Submit"):
-    with st.spinner("Generating response..."):
-        response = send_prompt(user_input)
-        st.success(response)
-
-'''
-
 import streamlit as st
 from PyPDF2 import PdfReader
 from docx import Document
