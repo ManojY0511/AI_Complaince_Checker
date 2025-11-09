@@ -93,15 +93,7 @@ if uploaded_file:
                     cols[0].metric("✍️ Long Sentences (>25 tokens)", summary.get("num_long_sentences", 0))
                     cols[1].metric("🔍 Grammar Issues", summary.get("num_grammar_issues", 0))
 
-
-                    # added for more data reading 
-                    # st.subheader("📖 Readability Scores")
-                    # readability = result.get("readability", {})
-                    # if readability:
-                    #     st.write(readability)
-                    # else:
-                    #     st.info("No readability data available.")
-
+              
                     # Grammar Issues
                     st.subheader("✍️ Grammar & Spelling Issues")
                     issues = result.get("grammar_issues", [])
