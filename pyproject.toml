@@ -1,0 +1,17 @@
+[project]
+name = "ai-complaince-checker"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.121.1",
+    "fastmcp>=2.13.0.2",
+    "language-tool-python>=2.9.5",
+    "pip>=25.3",
+    "pypdf2>=3.0.1",
+    "python-docx>=1.2.0",
+    "spacy>=3.8.8",
+    "streamlit>=1.51.0",
+    "textstat>=0.7.11",
+]
