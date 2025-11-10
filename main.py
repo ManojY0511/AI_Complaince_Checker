@@ -1,9 +1,12 @@
+###################################################################################
 # Script : main.py 
-# Author : manoj 
+# Author : Manoj 
 # Date : 09/11/2025
-#   Main file for processing the data . To evaluate the candidate’s ability to develop an AI-powered 
-#   system that processes document files and checks compliance against English guidelines
-
+# Description :   Main file for processing the data . To develop an AI-powered 
+#                  system that processes document files and checks compliance against English guidelines and 
+#                  corrected doc available for download.
+# Version : 1.0 
+##################################################################################
 
 from fastapi import FastAPI, APIRouter
 from starlette.middleware.cors import CORSMiddleware
@@ -13,8 +16,13 @@ import spacy
 import en_core_web_sm
 import language_tool_python
 
+from fastapi.responses import FileResponse
+import tempfile
+from docx import Document
+import os
 
-app = FastAPI(title='AI Powered Complaince Checker',version='1.0.0')
+
+app = FastAPI(title='AI Powered English Complaince Checker',version='1.0.0')
 
 app.add_middleware(
         CORSMiddleware,
@@ -29,20 +37,26 @@ router.include_router(router, tags=["home"])
 
 class TextRequest(BaseModel):
     file_text: str
+    filename: str = "eng_complaince_document.docx"  # optional
 
+  # ----nlp processing here ----
+nlp = spacy.load("en_core_web_sm")
+tool = language_tool_python.LanguageTool('en-US')
+nlp = en_core_web_sm.load()
+    
 @app.post("/complaince_checker")
 def complaince_check(request : TextRequest):
-    # return {"exists": os.path.exists(image_path)}
-    print(' have a fun calling the fastapi endpoint from streamlit ')
-    # same mean for both lines here
+    '''
+    arg : request text (pdf/doc text extracted)
+    This method will check the text for english language complaince using Spacy and language tool python 
+    and generate a report based on sentence , grammer errors , long sentences etc .. 
+    '''
+    print(' Have a fun calling the fastapi endpoint from streamlit ')
+
     request_text = request.file_text.strip()
     if not request_text:
         return {"error": "Empty text received"}
     
-    nlp = spacy.load("en_core_web_sm")
-    tool = language_tool_python.LanguageTool('en-US')
-    # nlp = spacy.load("en_core_web_sm", disable=[])
-    nlp = en_core_web_sm.load()
     if "sentencizer" not in nlp.pipe_names:
         nlp.add_pipe("sentencizer")  # added since a single sentence was read only 
     doc = nlp(request_text)
@@ -52,6 +66,7 @@ def complaince_check(request : TextRequest):
     passive_count = 0
     long_sent_count = 0
 
+    # Looping over documents to detect passive wording in sentences
     for sent in doc.sents:
         sent_text = sent.text.strip()
         is_passive = detect_passive(sent)
@@ -84,16 +99,7 @@ def complaince_check(request : TextRequest):
         for match in matches
     ]
 
-    # --- Readability Metrics ---
-    # readability = {
-    #     "flesch_reading_ease": textstat.flesch_reading_ease(request_text),
-    #     "flesch_kincaid_grade": textstat.flesch_kincaid_grade(request_text),
-    #     "smog_index": textstat.smog_index(request_text),
-    #     "automated_readability_index": textstat.automated_readability_index(request_text),
-    #     "dale_chall_score": textstat.dale_chall_readability_score(request_text),
-    # }
-
-    # --- Summary ---
+    # --- Summary Report Generation ---
     summary = {
         "total_sentences": len(sentence_results),
         "avg_sentence_length": sum(s["token_count"] for s in sentence_results) / max(1, len(sentence_results)),
@@ -104,9 +110,7 @@ def complaince_check(request : TextRequest):
 
     return {
         "summary": summary,
-        # "readability": readability,
         "grammar_issues": grammar_issues
-        #"analysis": sentence_results
     }
 
 
@@ -120,21 +124,36 @@ def detect_passive(sentence):
             return True
     return False
 
-    # for token in doc:
-    #     print(token.text, token.pos_, token.dep_)
-    # tokens = [
-    #     {"text": token.text, "pos": token.pos_, "dep": token.dep_}
-    #     for token in doc
-    # ]
-        
-    # return {"message": "NLP processing complete", "tokens": tokens}
-    # return {
-    #     "exists": "You are at a good point here for API Endpoint",
-    #     "received_length": len(request.file_text)
-    # }
+@app.post("/correct_document")
+def correct_document(request: TextRequest):
+    """
+    Automatically correct grammar issues and return a corrected document for download.
+    """
+    print(' Calling the corrected grammer .... ')
+    text = request.file_text.strip()
+    if not text:
+        return {"error": "Empty text received"}
+    
+    # Apply grammar corrections using LanguageTool
+    corrected_text = tool.correct(text)
+
+    # Create a temporary corrected DOCX file
+    temp_dir = tempfile.mkdtemp()
+    corrected_path = os.path.join(temp_dir, request.filename)
+
+    doc = Document()
+    for paragraph in corrected_text.split("\n"):
+        doc.add_paragraph(paragraph.strip())
+    doc.save(corrected_path)
+
+    return FileResponse(
+        corrected_path,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        filename=request.filename
+    )
 
 if __name__=='__main__':
     import uvicorn
-    uvicorn.run("main:app",host="0.0.0.0",port=8000)
+    uvicorn.run("main:app",host="127.0.0.1",port=8000)
 
 
